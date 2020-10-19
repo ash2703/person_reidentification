@@ -38,13 +38,13 @@ class BaseDetection(object):
         if detection_of == "Person Detection":
             logger.info("Checking Person Detection network inputs")
             assert (
-                len(net.input_info.keys()) == 1
+                len(net.inputs) == 1
             ), "Person Detection network should have only one input"
             assert (
                 len(net.outputs) == 1
             ), "Person Detection network should have only one output"
 
-        self.input_blob = next(iter(net.input_info))
+        self.input_blob = next(iter(net.inputs))
         self.out_blob = next(iter(net.outputs))
 
         # Loading model to the plugin
@@ -67,7 +67,7 @@ class BaseDetection(object):
                 network=net, device_name=device, num_requests=2
             )
 
-        self.input_dims = net.input_info[self.input_blob].input_data.shape
+        self.input_dims = net.inputs[self.input_blob].shape
         self.output_dims = net.outputs[self.out_blob].shape
         logger.info(
             f"{detection_of} input dims:{self.input_dims} output dims:{self.output_dims}"
@@ -123,8 +123,8 @@ class PersonDetection(BaseDetection):
             # res's shape: [1, 1, 200, 7]
             res = (
                 self.exec_net.requests[self.cur_request_id]
-                .output_blobs[self.out_blob]
-                .buffer
+                .outputs[self.out_blob]
+                
             )
             # Get rows whose confidence is larger than prob_threshold.
             # detected persons are also used by age/gender, emotion, landmark, head pose detection.
@@ -159,7 +159,7 @@ class PersonReIdentification(BaseDetection):
             The net outputs a blob with the [1, 256, 1, 1] shape named descriptor, 
             which can be compared with other descriptors using the cosine distance.
         """
-        res = self.exec_net.requests[0].output_blobs[self.out_blob].buffer
+        res = self.exec_net.requests[0].outputs[self.out_blob]
         feature_vec = res.reshape(1, 256)
         return feature_vec
 
